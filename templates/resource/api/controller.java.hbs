@@ -1,0 +1,20 @@
+package {{packages.controller}};
+
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+{{controllerBaseImport}}
+import gasi.one.core.api.common.id.IdCodec;
+import gasi.one.core.starter.application.hook.ResourceControllerHookRegistry;
+import {{packages.dto}}.{{resource.name}}DetailResponse;
+import {{packages.dto}}.{{resource.name}}SummaryResponse;
+{{controllerRequestImportBlock}}
+{{controllerNestedImportBlock}}
+import {{packages.inboundPort}}.{{resource.name}}Service;
+
+@RestController
+@RequestMapping("/api/v1/{{controllerApiPath}}")
+public class {{resource.name}}Controller{{controllerClassExtends}} {
+
+{{controllerBody}}
+}

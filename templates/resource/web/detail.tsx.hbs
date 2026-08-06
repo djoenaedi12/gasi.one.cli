@@ -1,0 +1,19 @@
+import type { {{resource.name}} } from './{{resource.name}}Types';
+
+type Props = {
+  value: {{resource.name}};
+};
+
+export function {{resource.name}}Detail({ value }: Props) {
+  return (
+    <section>
+      <h1>{{resource.title}}</h1>
+      <dl>
+{{#each fields}}
+        <dt>{{label}}</dt>
+        <dd>{String(value.{{typeName}} ?? '')}</dd>
+{{/each}}
+      </dl>
+    </section>
+  );
+}

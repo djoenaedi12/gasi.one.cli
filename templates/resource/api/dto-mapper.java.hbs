@@ -1,0 +1,31 @@
+package {{packages.dtoMapper}};
+
+import org.mapstruct.Mapper;
+{{dtoMapperExtraImportBlock}}
+{{dtoMapperMappingTargetImport}}
+{{dtoMapperAutowiredImport}}
+
+{{dtoMapperBaseImport}}
+import gasi.one.core.api.common.id.IdCodec;
+import {{packages.dto}}.{{resource.name}}DetailResponse;
+import {{packages.dto}}.{{resource.name}}SummaryResponse;
+{{dtoMapperRequestImportBlock}}
+import {{packages.model}}.{{resource.name}};
+{{dtoMapperChildImportBlock}}
+
+@Mapper(componentModel = "spring", uses = { IdCodec.class })
+public abstract class {{resource.name}}DtoMapper implements {{dtoMapperBaseInterface}} {
+
+{{dtoMapperIdCodecField}}
+{{dtoMapperWriteMethods}}
+
+{{dtoMapperSummaryMappings}}
+    @Override
+    public abstract {{resource.name}}SummaryResponse toSummary({{resource.name}} model);
+
+{{dtoMapperDetailMappings}}
+    @Override
+    public abstract {{resource.name}}DetailResponse toDetail({{resource.name}} model);
+
+{{dtoMapperChildMethods}}
+}

@@ -1,0 +1,30 @@
+import type { {{resource.name}}, {{resource.name}}Request } from './{{resource.name}}Types';
+
+const basePath = '{{resource.endpoint}}';
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json();
+}
+
+export const {{resource.variableName}}Api = {
+  findAll: () => request<{{resource.name}}[]>(basePath),
+  findById: (id: number) => request<{{resource.name}}>(`${basePath}/${id}`),
+  create: (payload: {{resource.name}}Request) =>
+    request<{{resource.name}}>(basePath, { method: 'POST', body: JSON.stringify(payload) }),
+  update: (id: number, payload: {{resource.name}}Request) =>
+    request<{{resource.name}}>(`${basePath}/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  delete: (id: number) => request<void>(`${basePath}/${id}`, { method: 'DELETE' })
+};

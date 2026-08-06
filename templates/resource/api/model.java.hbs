@@ -1,0 +1,21 @@
+package {{packages.model}};
+
+{{modelImportBlock}}
+import gasi.one.core.api.resource.model.BaseModel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+@Data
+@SuperBuilder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class {{resource.name}} extends BaseModel {
+{{#each fields}}
+    private {{entityJavaType}} {{propertyName}};
+
+{{/each}}
+}

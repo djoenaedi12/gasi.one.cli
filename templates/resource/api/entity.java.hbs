@@ -1,0 +1,26 @@
+package {{packages.entity}};
+
+{{entityImportBlock}}
+import gasi.one.core.starter.infrastructure.entity.BaseEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+@Data
+@SuperBuilder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@Entity(name = "{{resource.name}}")
+@Table(name = "{{resource.tableName}}")
+public class {{resource.name}}Entity extends BaseEntity {
+{{#each fields}}
+{{entityAnnotationBlock}}
+    private {{entityJavaType}}{{#if relation}}Entity{{/if}} {{propertyName}};
+
+{{/each}}
+}

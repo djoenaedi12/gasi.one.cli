@@ -1,0 +1,10 @@
+package {{packages.inboundPort}};
+
+{{inboundBaseImport}}
+import {{packages.dto}}.{{resource.name}}DetailResponse;
+import {{packages.dto}}.{{resource.name}}SummaryResponse;
+{{inboundRequestImportBlock}}
+
+public interface {{resource.name}}Service extends
+        {{inboundExtends}} {
+}

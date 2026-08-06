@@ -1,0 +1,32 @@
+import { FormEvent, useState } from 'react';
+import type { {{resource.name}}Request } from './{{resource.name}}Types';
+
+type Props = {
+  initialValue?: Partial<{{resource.name}}Request>;
+  onSubmit: (value: {{resource.name}}Request) => void;
+};
+
+export function {{resource.name}}Form({ initialValue = {}, onSubmit }: Props) {
+  const [value, setValue] = useState<Partial<{{resource.name}}Request>>(initialValue);
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    onSubmit(value as {{resource.name}}Request);
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+{{#each fields}}
+      <label>
+        {{label}}
+        <input
+          type="{{inputType}}"
+          value={String(value.{{requestName}} ?? '')}
+          onChange={(event) => setValue({ ...value, {{requestName}}: event.target.value as never })}
+        />
+      </label>
+{{/each}}
+      <button type="submit">Save</button>
+    </form>
+  );
+}

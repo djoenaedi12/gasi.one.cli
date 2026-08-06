@@ -1,0 +1,18 @@
+{
+  "name": "gasi-one",
+  "version": "0.1.0",
+  "description": "gasi:one CLI generator from JSON resources for Spring Boot API and React web apps.",
+  "type": "module",
+  "bin": {
+    "gasi-one": "./bin/gasi-one.js"
+  },
+  "scripts": {
+    "validate:example": "node ./bin/gasi-one.js resource validate -f examples/resources.json",
+    "plan:example": "node ./bin/gasi-one.js resource plan -f examples/resources.json -o generated",
+    "smoke": "node ./bin/gasi-one.js resource sync -f examples/resources.json -o generated"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

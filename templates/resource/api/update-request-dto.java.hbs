@@ -1,0 +1,24 @@
+package {{packages.dto}};
+
+{{updateRequestDtoImportBlock}}
+import gasi.one.core.api.resource.dto.VersionedRequest;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class {{resource.name}}UpdateRequest implements VersionedRequest {
+
+    @NotNull
+    private Integer version;
+
+{{#each fields}}
+{{requestAnnotationBlock}}
+    private {{requestJavaType}} {{requestName}};
+
+{{/each}}
+}

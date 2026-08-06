@@ -1,0 +1,24 @@
+package {{FULL_PACKAGE}}.extension;
+
+import java.util.List;
+
+import org.pf4j.Extension;
+
+import gasi.one.core.api.plugin.I18nExtension;
+
+/**
+ * Registers generated and custom i18n basenames for plugin {{PLUGIN_ID}}.
+ *
+ * <p>Generated messages: {@code src/main/resources/{{I18N_BASENAME}}_{locale}.properties}.</p>
+ * <p>Custom messages: {@code src/main/resources/{{I18N_CUSTOM_BASENAME}}_{locale}.properties}.</p>
+ */
+@Extension
+public class {{I18N_EXT_CLASS_NAME}} implements I18nExtension {
+
+    @Override
+    public List<String> getMessageBasenames() {
+        return List.of(
+                "classpath:{{I18N_BASENAME}}",
+                "classpath:{{I18N_CUSTOM_BASENAME}}");
+    }
+}

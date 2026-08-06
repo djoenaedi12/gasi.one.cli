@@ -1,0 +1,27 @@
+package {{packages.adapter}};
+
+import org.springframework.stereotype.Component;
+
+import gasi.one.core.starter.application.hook.ResourceRepositoryHookRegistry;
+import gasi.one.core.starter.infrastructure.adapter.BaseRepositoryAdapter;
+import {{packages.entity}}.{{resource.name}}Entity;
+import {{packages.entityMapper}}.{{resource.name}}Mapper;
+import {{packages.model}}.{{resource.name}};
+import {{packages.outboundPort}}.{{resource.name}}RepositoryPort;
+import {{packages.persistence}}.{{resource.name}}EntityRepository;
+
+@Component
+public class {{resource.name}}RepositoryAdapter
+        extends BaseRepositoryAdapter<{{resource.name}}, {{resource.name}}Entity>
+        implements {{resource.name}}RepositoryPort {
+
+    public {{resource.name}}RepositoryAdapter({{resource.name}}EntityRepository repository, {{resource.name}}Mapper mapper,
+            ResourceRepositoryHookRegistry hookRegistry) {
+        super(repository, mapper, {{resource.name}}Entity.class, hookRegistry);
+    }
+
+    @Override
+    protected String resourceType() {
+        return "{{resource.name}}";
+    }
+}

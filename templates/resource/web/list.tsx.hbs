@@ -1,0 +1,35 @@
+import { useEffect, useState } from 'react';
+import { {{resource.variableName}}Api } from './{{resource.name}}Api';
+import type { {{resource.name}} } from './{{resource.name}}Types';
+
+export function {{resource.name}}List() {
+  const [items, setItems] = useState<{{resource.name}}[]>([]);
+
+  useEffect(() => {
+    {{resource.variableName}}Api.findAll().then(setItems);
+  }, []);
+
+  return (
+    <section>
+      <h1>{{resource.title}}</h1>
+      <table>
+        <thead>
+          <tr>
+{{#each fields}}
+            <th>{{label}}</th>
+{{/each}}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+{{#each fields}}
+              <td>{String(item.{{typeName}} ?? '')}</td>
+{{/each}}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}

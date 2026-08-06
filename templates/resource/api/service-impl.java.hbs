@@ -1,0 +1,30 @@
+package {{packages.service}};
+
+{{serviceImportBlock}}
+{{serviceBaseImport}}
+{{serviceAuditImport}}
+import {{packages.dto}}.{{resource.name}}DetailResponse;
+import {{packages.dto}}.{{resource.name}}SummaryResponse;
+{{serviceRequestImportBlock}}
+import {{packages.dtoMapper}}.{{resource.name}}DtoMapper;
+import {{packages.model}}.{{resource.name}};
+import {{packages.inboundPort}}.{{resource.name}}Service;
+import {{packages.outboundPort}}.{{resource.name}}RepositoryPort;
+
+@Service
+{{serviceAuditAnnotation}}
+public class {{resource.name}}ServiceImpl
+        extends {{serviceExtends}}
+        implements {{resource.name}}Service {
+
+{{serviceFields}}
+    public {{resource.name}}ServiceImpl({{serviceConstructorParams}}) {
+        super({{serviceSuperArgs}});
+{{serviceConstructorAssignments}}
+    }
+
+    @Override
+    public String resourceType() {
+        return "{{resource.name}}";
+    }
+}

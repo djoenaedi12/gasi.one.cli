@@ -1,0 +1,11 @@
+package {{packages.entityMapper}};
+
+import org.mapstruct.Mapper;
+
+import gasi.one.core.starter.infrastructure.mapper.BaseMapper;
+import {{packages.entity}}.{{resource.name}}Entity;
+import {{packages.model}}.{{resource.name}};
+
+@Mapper
+public interface {{resource.name}}Mapper extends BaseMapper<{{resource.name}}, {{resource.name}}Entity> {
+}

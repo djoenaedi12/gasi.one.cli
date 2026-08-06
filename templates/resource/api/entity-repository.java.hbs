@@ -1,0 +1,13 @@
+package {{packages.persistence}};
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import {{packages.entity}}.{{resource.name}}Entity;
+
+@Repository
+public interface {{resource.name}}EntityRepository extends
+        JpaRepository<{{resource.name}}Entity, Long>,
+        JpaSpecificationExecutor<{{resource.name}}Entity> {
+}

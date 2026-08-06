@@ -1,0 +1,88 @@
+{
+  "resources": [
+    {
+      "name": "Department",
+      "pluginName": "hr",
+      "package": "gasi.one.plugins.hr.department",
+      "fields": [
+        {
+          "name": "code",
+          "type": "string",
+          "length": 50,
+          "required": true,
+          "unique": true,
+          "validation": {
+            "minLength": 2,
+            "maxLength": 50,
+            "pattern": "^[A-Z0-9-]+$"
+          }
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "length": 150,
+          "required": true,
+          "validation": {
+            "minLength": 3,
+            "maxLength": 150
+          }
+        }
+      ],
+      "i18n": {
+        "id": {
+          "label": "Departemen",
+          "labelPlural": "Departemen",
+          "field": {
+            "code": "Kode",
+            "name": "Nama"
+          }
+        }
+      }
+    },
+    {
+      "name": "Employee",
+      "pluginName": "hr",
+      "package": "gasi.one.plugins.hr.employee",
+      "fields": [
+        {
+          "name": "employeeNo",
+          "type": "string",
+          "length": 50,
+          "required": true,
+          "unique": true
+        },
+        {
+          "name": "fullName",
+          "type": "string",
+          "length": 150,
+          "required": true
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "length": 150,
+          "validation": {
+            "email": true
+          }
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "defaultValue": true
+        },
+        {
+          "name": "department",
+          "type": "long",
+          "required": true,
+          "relation": {
+            "type": "many-to-one",
+            "target": "Department",
+            "package": "gasi.one.plugins.hr.department",
+            "joinColumn": "department_id",
+            "fetch": "lazy"
+          }
+        }
+      ]
+    }
+  ]
+}
