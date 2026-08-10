@@ -1,6 +1,6 @@
 package {{packages.dto}};
 
-{{responseDtoImportBlock}}
+{{summaryResponseDtoImportBlock}}
 import gasi.one.core.api.resource.dto.BaseSummaryResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class {{resource.name}}SummaryResponse extends BaseSummaryResponse {
-{{#each fields}}
+{{#each summaryFields}}
     private {{responseJavaType}} {{responseName}};
 
 {{/each}}

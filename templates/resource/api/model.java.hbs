@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class {{resource.name}} extends BaseModel {
-{{#each fields}}
+{{#each modelFields}}
     private {{entityJavaType}} {{propertyName}};
 
 {{/each}}

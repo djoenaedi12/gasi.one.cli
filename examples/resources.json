@@ -4,10 +4,15 @@
       "name": "Department",
       "pluginName": "hr",
       "package": "gasi.one.plugins.hr.department",
+      "table": "hr_departments",
+      "endpoint": "/departments",
+      "lookup": true,
       "fields": [
         {
           "name": "code",
           "type": "string",
+          "projection": true,
+          "column": "department_code",
           "length": 50,
           "required": true,
           "unique": true,
@@ -20,21 +25,21 @@
         {
           "name": "name",
           "type": "string",
+          "projection": true,
           "length": 150,
-          "required": true,
-          "validation": {
-            "minLength": 3,
-            "maxLength": 150
-          }
+          "required": true
         }
       ],
       "i18n": {
         "id": {
-          "label": "Departemen",
-          "labelPlural": "Departemen",
           "field": {
             "code": "Kode",
             "name": "Nama"
+          },
+          "validation": {
+            "code": {
+              "pattern": "Kode hanya boleh berisi huruf besar, angka, dan tanda hubung"
+            }
           }
         }
       }
@@ -43,10 +48,12 @@
       "name": "Employee",
       "pluginName": "hr",
       "package": "gasi.one.plugins.hr.employee",
+      "mode": "crud",
       "fields": [
         {
           "name": "employeeNo",
           "type": "string",
+          "projection": true,
           "length": 50,
           "required": true,
           "unique": true
@@ -54,15 +61,28 @@
         {
           "name": "fullName",
           "type": "string",
+          "projection": true,
           "length": 150,
           "required": true
         },
         {
-          "name": "email",
-          "type": "string",
-          "length": 150,
+          "name": "employmentType",
+          "type": "enum",
+          "enum": {
+            "name": "EmploymentType",
+            "values": ["PERMANENT", "CONTRACT"]
+          }
+        },
+        {
+          "name": "salary",
+          "type": "decimal",
+          "precision": 19,
+          "scale": 2,
+          "dto": {
+            "summary": false
+          },
           "validation": {
-            "email": true
+            "positiveOrZero": true
           }
         },
         {
@@ -81,6 +101,76 @@
             "joinColumn": "department_id",
             "fetch": "lazy"
           }
+        }
+      ]
+    },
+    {
+      "name": "EmployeeAsset",
+      "mode": "embed",
+      "pluginName": "hr",
+      "package": "gasi.one.plugins.hr.employee.asset",
+      "parent": {
+        "resource": "Employee",
+        "field": "assets"
+      },
+      "fields": [
+        {
+          "name": "employee",
+          "type": "long",
+          "required": true,
+          "relation": {
+            "type": "many-to-one",
+            "target": "Employee",
+            "package": "gasi.one.plugins.hr.employee",
+            "joinColumn": "employee_id",
+            "fetch": "lazy"
+          }
+        },
+        {
+          "name": "assetNo",
+          "type": "string",
+          "length": 80,
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "length": 150
+        }
+      ]
+    },
+    {
+      "name": "EmployeeCertification",
+      "pluginName": "hr",
+      "package": "gasi.one.plugins.hr.employee.certification",
+      "endpoint": "/certifications",
+      "parent": {
+        "resource": "Employee",
+        "route": "nested"
+      },
+      "fields": [
+        {
+          "name": "employee",
+          "type": "long",
+          "required": true,
+          "relation": {
+            "type": "many-to-one",
+            "target": "Employee",
+            "package": "gasi.one.plugins.hr.employee",
+            "joinColumn": "employee_id",
+            "fetch": "lazy"
+          }
+        },
+        {
+          "name": "certificationName",
+          "type": "string",
+          "projection": true,
+          "length": 150,
+          "required": true
+        },
+        {
+          "name": "issuedAt",
+          "type": "date"
         }
       ]
     }

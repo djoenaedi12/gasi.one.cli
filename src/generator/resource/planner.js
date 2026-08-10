@@ -18,13 +18,17 @@ export async function buildResourcePlan(document, options) {
   const migrationBaseDate = new Date();
   const schemaState = targets.includes('api') ? await readManifestSchemaState(outputDir) : null;
   const i18nLocalesByPlugin = targets.includes('api') ? await readManifestPluginLocales(outputDir) : new Map();
+  const apiResourcePlan = targets.includes('api')
+    ? buildApiResourceSet(document.resources, schemaState)
+    : { resources: document.resources, embedChildrenByParent: new Map() };
 
-  for (const [index, resource] of document.resources.entries()) {
+  for (const [index, resource] of apiResourcePlan.resources.entries()) {
     if (targets.includes('api')) {
       const createMigration = await shouldCreateMigration(outputDir, resource);
       plannedFiles.push(...createResourceApiFiles(resource, {
         migrationTimestamp: migrationTimestamp(migrationBaseDate, index),
-        includeCreateMigration: createMigration
+        includeCreateMigration: createMigration,
+        embedChildren: apiResourcePlan.embedChildrenByParent.get(resourceKey(resource)) ?? []
       }));
       const previousSnapshot = schemaState?.resources?.[resourceKey(resource)];
       if (!createMigration && previousSnapshot) {
@@ -39,10 +43,10 @@ export async function buildResourcePlan(document, options) {
   }
 
   if (targets.includes('api')) {
-    plannedFiles.push(...createResourceApiI18nFiles(document.resources, { localesByPlugin: i18nLocalesByPlugin }));
+    plannedFiles.push(...createResourceApiI18nFiles(apiResourcePlan.resources, { localesByPlugin: i18nLocalesByPlugin }));
   }
 
-  plannedFiles.push(await createManifestFile(document.resources, outputDir, targets, plannedFiles));
+  plannedFiles.push(await createManifestFile(apiResourcePlan.resources, outputDir, targets, plannedFiles));
 
   const files = [];
   for (const file of plannedFiles) {
@@ -58,6 +62,67 @@ export async function buildResourcePlan(document, options) {
   }
 
   return { outputDir, files };
+}
+
+function buildApiResourceSet(resources, schemaState) {
+  const seenByKey = new Map();
+  const seenByName = new Map();
+  const manifestResources = new Map(Object.entries(schemaState?.resources ?? {}));
+  const manifestByName = new Map();
+  const extraParents = new Map();
+  const embedChildrenByParent = new Map();
+
+  for (const [key, resource] of manifestResources.entries()) {
+    if (!manifestByName.has(resource.name)) manifestByName.set(resource.name, []);
+    manifestByName.get(resource.name).push({ key, resource });
+  }
+
+  for (const resource of resources) {
+    if (resource.mode === 'embed') {
+      const parent = resolveEmbedParent(resource, seenByKey, seenByName, manifestResources, manifestByName);
+      if (!parent) {
+        throw new Error(`Embedded resource ${resource.name} requires generated parent ${resource.parent.resource} first.`);
+      }
+
+      if (!embedChildrenByParent.has(parent.key)) embedChildrenByParent.set(parent.key, []);
+      embedChildrenByParent.get(parent.key).push(resource);
+      if (!resources.some((candidate) => resourceKey(candidate) === parent.key)) {
+        extraParents.set(parent.key, parent.resource);
+      }
+    }
+
+    const key = resourceKey(resource);
+    seenByKey.set(key, resource);
+    if (!seenByName.has(resource.name)) seenByName.set(resource.name, []);
+    seenByName.get(resource.name).push({ key, resource });
+  }
+
+  return {
+    resources: [...extraParents.values(), ...resources],
+    embedChildrenByParent
+  };
+}
+
+function resolveEmbedParent(resource, seenByKey, seenByName, manifestResources, manifestByName) {
+  if (!resource.parent?.resource) return null;
+  if (resource.parent.packageName) {
+    const key = `${resource.parent.packageName}.${resource.parent.resource}`;
+    const parent = seenByKey.get(key) ?? manifestResources.get(key);
+    return parent ? { key, resource: parent } : null;
+  }
+
+  const seen = seenByName.get(resource.parent.resource) ?? [];
+  if (seen.length === 1) return seen[0];
+  if (seen.length > 1) {
+    throw new Error(`Embedded resource ${resource.name} parent.package is required because parent ${resource.parent.resource} is ambiguous.`);
+  }
+
+  const manifests = manifestByName.get(resource.parent.resource) ?? [];
+  if (manifests.length === 1) return manifests[0];
+  if (manifests.length > 1) {
+    throw new Error(`Embedded resource ${resource.name} parent.package is required because parent ${resource.parent.resource} is ambiguous.`);
+  }
+  return null;
 }
 
 async function fileAction(file, absolutePath, content, exists) {

@@ -2,5 +2,7 @@
   "name": "human-resource",
   "code": "hr",
   "displayName": "HR",
-  "description": "Human resource plugin"
+  "version": "1.0.0",
+  "description": "Human resource plugin",
+  "dependsOn": []
 }

@@ -13,7 +13,7 @@ import {{packages.dto}}.{{resource.name}}SummaryResponse;
 import {{packages.model}}.{{resource.name}};
 {{dtoMapperChildImportBlock}}
 
-@Mapper(componentModel = "spring", uses = { IdCodec.class })
+@Mapper(componentModel = "spring", uses = { IdCodec.class{{dtoMapperUses}} })
 public abstract class {{resource.name}}DtoMapper implements {{dtoMapperBaseInterface}} {
 
 {{dtoMapperIdCodecField}}

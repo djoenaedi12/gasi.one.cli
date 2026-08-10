@@ -1,6 +1,6 @@
 package {{packages.dto}};
 
-{{responseDtoImportBlock}}
+{{detailResponseDtoImportBlock}}
 import gasi.one.core.api.resource.dto.BaseDetailResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,7 +14,11 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class {{resource.name}}DetailResponse extends BaseDetailResponse {
-{{#each fields}}
+{{#each detailFields}}
+    private {{responseJavaType}} {{responseName}};
+
+{{/each}}
+{{#each detailEmbedFields}}
     private {{responseJavaType}} {{responseName}};
 
 {{/each}}

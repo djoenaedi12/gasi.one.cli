@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 @Entity(name = "{{resource.name}}")
 @Table(name = "{{resource.tableName}}")
 public class {{resource.name}}Entity extends BaseEntity {
-{{#each fields}}
+{{#each entityFields}}
 {{entityAnnotationBlock}}
     private {{entityJavaType}}{{#if relation}}Entity{{/if}} {{propertyName}};
 

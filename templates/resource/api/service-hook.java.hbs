@@ -1,0 +1,29 @@
+package {{packages.serviceHook}};
+
+{{serviceRelationHook.importBlock}}
+
+@Component
+@ResourceHook(value = "{{resource.name}}", layer = HookLayer.SERVICE)
+public class {{resource.name}}ServiceHook implements ResourceServiceHook<{{serviceRelationHook.genericTypes}}> {
+
+{{serviceRelationHook.fieldDeclarations}}
+
+    public {{resource.name}}ServiceHook({{serviceRelationHook.constructorParams}}) {
+{{serviceRelationHook.constructorAssignments}}
+    }
+
+    @Override
+    public void beforeCreate(String resourceType, {{resource.name}} domain, {{resource.name}}CreateRequest request) {
+        validateRelations(domain);
+    }
+
+    @Override
+    public void beforeUpdate(String resourceType, {{resource.name}} domain, {{resource.name}}UpdateRequest request) {
+        validateRelations(domain);
+    }
+{{serviceRelationHook.ownershipMethods}}
+
+    private void validateRelations({{resource.name}} domain) {
+{{serviceRelationHook.validateBlocks}}
+    }
+}

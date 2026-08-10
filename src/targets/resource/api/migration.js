@@ -1,13 +1,11 @@
 import { pluralSnakeCase } from '../../../core/naming.js';
 
 export function snapshotResource(resource) {
-  return {
-    name: resource.name,
+  return JSON.parse(JSON.stringify({
+    ...resource,
     pluginName: pluginName(resource),
-    packageName: resource.packageName,
-    tableName: resource.tableName,
     fields: resource.fields.map(snapshotField)
-  };
+  }));
 }
 
 export function resourceKey(resource) {
@@ -61,12 +59,13 @@ export function sqlType(field) {
   if (field.type === 'datetime') return 'DATETIME(6)';
   if (field.type === 'instant') return 'TIMESTAMP(6)';
   if (field.type === 'uuid') return 'CHAR(36)';
-  if (field.type === 'enum') return 'VARCHAR(50)';
+  if (field.type === 'enum') return field.enum?.persistenceType === 'string' ? 'VARCHAR(50)' : 'INT';
   return 'VARCHAR(255)';
 }
 
 function snapshotField(field) {
   return {
+    ...field,
     name: field.name,
     columnName: field.relation ? field.relation.joinColumn || field.columnName : field.columnName,
     type: field.type,
@@ -76,11 +75,20 @@ function snapshotField(field) {
     required: field.required,
     unique: field.unique,
     defaultValue: field.defaultValue,
+    enum: field.enum
+      ? {
+          name: field.enum.name,
+          packageName: field.enum.packageName,
+          persistenceType: field.enum.persistenceType,
+          generated: field.enum.generated
+        }
+      : null,
     relation: field.relation
       ? {
           type: field.relation.type,
           target: field.relation.target,
           packageName: field.relation.packageName,
+          table: field.relation.table,
           joinColumn: field.relation.joinColumn || field.columnName
         }
       : null
@@ -178,7 +186,7 @@ function columnDefinition(field) {
 function fkStatement(tableName, field) {
   return `ALTER TABLE ${tableName}
     ADD CONSTRAINT fk_${tableName}_${field.columnName}
-    FOREIGN KEY (${field.columnName}) REFERENCES ${pluralSnakeCase(field.relation.target)}(id);`;
+    FOREIGN KEY (${field.columnName}) REFERENCES ${field.relation.table || pluralSnakeCase(field.relation.target)}(id);`;
 }
 
 function buildCreateColumns(resource, fields) {

@@ -22,28 +22,55 @@ export function normalizeResourceDocument(rawDocument) {
     throw new Error('Resource schema must contain at least one resource.');
   }
 
-  return {
-    resources: rawResources.map(normalizeResource)
-  };
+  const resources = rawResources.map(normalizeResource);
+  resolveParents(resources);
+  resolveRelationTables(resources);
+
+  return { resources };
 }
 
 function normalizeResource(rawResource) {
   const rawName = rawResource.name ?? rawResource.entityName;
   const name = pascalCase(rawName ?? '');
   const fields = rawResource.fields ?? [];
+  const mode = rawResource.mode ?? 'crud';
+  const parent = normalizeParent(rawResource.parent);
+  if (mode === 'embed' && parent && !rawResource.parent?.field) {
+    parent.field = camelCase(pluralKebabCase(name));
+  }
 
   return {
     name,
     variableName: camelCase(name),
     pluginName: rawResource.pluginName ?? null,
     packageName: rawResource.package ?? '',
-    mode: rawResource.mode ?? 'crud',
+    mode,
     tableName: rawResource.table || pluralSnakeCase(name),
     endpoint: rawResource.endpoint || `/${pluralKebabCase(name)}`,
     routePath: pluralKebabCase(name),
     title: titleCase(name),
+    lookup: rawResource.lookup ?? false,
+    parent,
     fields: fields.map(normalizeField),
     i18n: rawResource.i18n ?? {}
+  };
+}
+
+function normalizeParent(rawParent) {
+  if (!rawParent) return null;
+
+  const resource = pascalCase(rawParent.resource ?? '');
+  const field = rawParent.field ? camelCase(rawParent.field) : camelCase(resource);
+
+  return {
+    resource,
+    packageName: rawParent.package ?? '',
+    endpoint: rawParent.endpoint ?? '',
+    route: String(rawParent.route ?? '').toLowerCase(),
+    pathParam: rawParent.pathParam ?? `${field}Id`,
+    field,
+    joinColumn: rawParent.joinColumn ?? `${snakeCase(field)}_id`,
+    table: rawParent.table ?? ''
   };
 }
 
@@ -51,7 +78,7 @@ function normalizeField(rawField) {
   const type = String(rawField.type ?? '').toLowerCase();
   const typeInfo = fieldTypes[type] ?? {};
   const name = camelCase(rawField.name ?? '');
-  const enumName = rawField.enumName ? pascalCase(rawField.enumName) : null;
+  const enumDefinition = normalizeEnum(rawField.enum);
   const relation = normalizeRelation(rawField.relation);
 
   return {
@@ -59,9 +86,9 @@ function normalizeField(rawField) {
     propertyName: relation ? camelCase(rawField.name) : name,
     requestName: relation ? `${camelCase(rawField.name)}Id` : name,
     responseName: relation ? `${camelCase(rawField.name)}Id` : name,
-    label: rawField.label ?? titleCase(name),
+    label: titleCase(name),
     type,
-    javaType: enumName ?? typeInfo.javaType,
+    javaType: enumDefinition?.name ?? typeInfo.javaType,
     tsType: typeInfo.tsType ?? 'string',
     inputType: typeInfo.inputType ?? 'text',
     columnName: rawField.column || snakeCase(name),
@@ -72,9 +99,39 @@ function normalizeField(rawField) {
     unique: Boolean(rawField.unique),
     defaultValue: rawField.defaultValue ?? null,
     validation: rawField.validation ?? {},
+    dto: normalizeDto(rawField.dto),
+    projection: Boolean(rawField.projection),
     relation,
-    enumName,
-    enumValues: rawField.enumValues ?? []
+    enum: enumDefinition
+  };
+}
+
+function normalizeDto(rawDto = {}) {
+  return {
+    create: rawDto.create ?? true,
+    update: rawDto.update ?? true,
+    summary: rawDto.summary ?? true,
+    detail: rawDto.detail ?? true
+  };
+}
+
+function normalizeEnum(rawEnum) {
+  if (!rawEnum) return null;
+
+  const values = rawEnum.values ?? [];
+  const constants = Array.isArray(values) ? values : [];
+
+  return {
+    name: rawEnum.name ? pascalCase(rawEnum.name) : '',
+    packageName: rawEnum.package ?? '',
+    values,
+    persistenceType: String(rawEnum.type ?? 'ordinal').toLowerCase(),
+    generated: !rawEnum.package,
+    constantsBlock: constants.map((value, index) => `    ${String(value)}${index === constants.length - 1 ? ';' : ','}`).join('\n'),
+    constants: constants.map((value, index) => ({
+      name: String(value),
+      suffix: index === constants.length - 1 ? ';' : ','
+    }))
   };
 }
 
@@ -85,10 +142,45 @@ function normalizeRelation(rawRelation) {
     type: String(rawRelation.type).toLowerCase(),
     target: rawRelation.target ?? '',
     packageName: rawRelation.package ?? '',
+    table: rawRelation.table ?? '',
     joinColumn: rawRelation.joinColumn ?? '',
     mappedBy: rawRelation.mappedBy ?? '',
     fetch: String(rawRelation.fetch ?? 'lazy').toLowerCase(),
     cascade: rawRelation.cascade ?? [],
     orphanRemoval: Boolean(rawRelation.orphanRemoval)
   };
+}
+
+function resolveRelationTables(resources) {
+  const resourcesByName = new Map(resources.map((resource) => [resource.name, resource]));
+  const resourcesByPackageAndName = new Map(resources.map((resource) => [`${resource.packageName}.${resource.name}`, resource]));
+
+  for (const resource of resources) {
+    for (const field of resource.fields) {
+      if (!field.relation || field.relation.table) continue;
+      const targetResource = resourcesByPackageAndName.get(`${field.relation.packageName}.${field.relation.target}`)
+        ?? resourcesByName.get(field.relation.target);
+      field.relation.table = targetResource?.tableName ?? pluralSnakeCase(field.relation.target);
+    }
+  }
+}
+
+function resolveParents(resources) {
+  const resourcesByName = new Map(resources.map((resource) => [resource.name, resource]));
+  const resourcesByPackageAndName = new Map(resources.map((resource) => [`${resource.packageName}.${resource.name}`, resource]));
+
+  for (const resource of resources) {
+    if (!resource.parent) continue;
+    const parentResource = resourcesByPackageAndName.get(`${resource.parent.packageName}.${resource.parent.resource}`)
+      ?? resourcesByName.get(resource.parent.resource);
+
+    if (parentResource) {
+      resource.parent.packageName ||= parentResource.packageName;
+      resource.parent.endpoint ||= parentResource.endpoint;
+      resource.parent.table ||= parentResource.tableName;
+    }
+
+    resource.parent.endpoint ||= `/${pluralKebabCase(resource.parent.resource)}`;
+    resource.parent.table ||= pluralSnakeCase(resource.parent.resource);
+  }
 }

@@ -1,0 +1,76 @@
+package {{packages.hook}};
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import gasi.one.core.api.common.id.IdCodec;
+import gasi.one.core.api.common.query.AndFilter;
+import gasi.one.core.api.common.query.GenericFilter;
+import gasi.one.core.api.common.query.QueryRequest;
+import gasi.one.core.api.common.query.SimpleFilter;
+import gasi.one.core.api.resource.hook.HookLayer;
+import gasi.one.core.api.resource.hook.ResourceRequestContext;
+import gasi.one.core.api.resource.hook.ResourceControllerHook;
+import gasi.one.core.api.resource.hook.ResourceHook;
+import {{packages.dto}}.{{resource.name}}DetailResponse;
+import {{packages.dto}}.{{resource.name}}SummaryResponse;
+{{controllerHookRequestImportBlock}}
+
+@Component
+@ResourceHook(value = "{{resource.name}}", layer = HookLayer.CONTROLLER)
+public class {{resource.name}}ControllerHook implements
+        ResourceControllerHook<{{controllerHookGenericTypes}}> {
+
+    private final IdCodec idCodec;
+
+    public {{resource.name}}ControllerHook(IdCodec idCodec) {
+        this.idCodec = idCodec;
+    }
+
+    @Override
+    public void beforeFindByRequest(QueryRequest request, ResourceRequestContext context) {
+        applyParentFilter(request, context);
+    }
+
+    @Override
+    public void beforeFindAllRequest(QueryRequest request, ResourceRequestContext context) {
+        applyParentFilter(request, context);
+    }
+
+    @Override
+    public void beforeFindAllPagedRequest(QueryRequest request, ResourceRequestContext context) {
+        applyParentFilter(request, context);
+    }
+{{controllerHookMutationMethods}}
+
+    private void applyParentFilter(QueryRequest request, ResourceRequestContext context) {
+        if (request == null) {
+            return;
+        }
+        Long parentId = decodeParentId(context);
+        if (parentId == null) {
+            return;
+        }
+
+        GenericFilter parentFilter = SimpleFilter.builder()
+                .field("{{nestedParent.filterField}}")
+                .operator(SimpleFilter.FilterOperator.EQUALS)
+                .value(parentId)
+                .build();
+
+        if (request.getFilter() == null) {
+            request.setFilter(parentFilter);
+            return;
+        }
+
+        request.setFilter(AndFilter.builder()
+                .filters(List.of(parentFilter, request.getFilter()))
+                .build());
+    }
+
+    private Long decodeParentId(ResourceRequestContext context) {
+        String parentId = context.pathVariable("{{nestedParent.pathParam}}");
+        return parentId == null || parentId.isBlank() ? null : idCodec.decode(parentId);
+    }
+}

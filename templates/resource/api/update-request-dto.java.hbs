@@ -16,8 +16,12 @@ public class {{resource.name}}UpdateRequest implements VersionedRequest {
     @NotNull
     private Integer version;
 
-{{#each fields}}
+{{#each updateFields}}
 {{requestAnnotationBlock}}
+    private {{requestJavaType}} {{requestName}};
+
+{{/each}}
+{{#each updateEmbedFields}}
     private {{requestJavaType}} {{requestName}};
 
 {{/each}}

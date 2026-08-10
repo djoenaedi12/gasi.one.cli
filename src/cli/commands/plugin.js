@@ -14,9 +14,6 @@ Usage:
   gasi-one plugin sync     -f <plugin.json> -o <output-dir> --target api|web
   gasi-one plugin clean    -f <plugin.json> -o <output-dir> --target api|web
 
-Alias:
-  gasi-one module <command> ...
-
 Options:
   -f, --file      Plugin JSON file.
   -o, --output    Output directory. Default: generated

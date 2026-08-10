@@ -1,6 +1,6 @@
 package {{packages.dto}};
 
-{{requestDtoImportBlock}}
+{{createRequestDtoImportBlock}}
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,8 +11,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class {{resource.name}}CreateRequest {
-{{#each fields}}
+{{#each createFields}}
 {{requestAnnotationBlock}}
+    private {{requestJavaType}} {{requestName}};
+
+{{/each}}
+{{#each createEmbedFields}}
     private {{requestJavaType}} {{requestName}};
 
 {{/each}}

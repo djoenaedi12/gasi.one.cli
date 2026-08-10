@@ -5,8 +5,6 @@ CREATE TABLE {{migration.tableName}} (
     updated_by VARCHAR(50),
     updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     version INT NOT NULL DEFAULT 0,
-    source_id BIGINT,
-    lifecycle_status TINYINT UNSIGNED,
-    upload_id BIGINT{{migration.columnsSql}}
+    lifecycle_status TINYINT UNSIGNED{{migration.columnsSql}}
 );
 {{migration.fkConstraintsSql}}

@@ -112,24 +112,53 @@ async function apiFiles(resource, outputDir, plannedFiles) {
   const basePath = `src/main/java/${packageToPath(resource.packageName)}`;
   const className = resource.name;
   const files = [
-    javaFile(`${basePath}/presentation/controller/${className}Controller.java`),
-    javaFile(`${basePath}/application/dto/${className}CreateRequest.java`),
-    javaFile(`${basePath}/application/dto/${className}UpdateRequest.java`),
     javaFile(`${basePath}/application/dto/${className}SummaryResponse.java`),
     javaFile(`${basePath}/application/dto/${className}DetailResponse.java`),
     javaFile(`${basePath}/application/mapper/${className}DtoMapper.java`),
-    javaFile(`${basePath}/application/service/${className}ServiceImpl.java`),
     javaFile(`${basePath}/domain/model/${className}.java`),
-    javaFile(`${basePath}/domain/port/inbound/${className}Service.java`),
-    javaFile(`${basePath}/domain/port/outbound/${className}RepositoryPort.java`),
+    ...generatedEnumFiles(resource),
     javaFile(`${basePath}/infrastructure/entity/${className}Entity.java`),
-    javaFile(`${basePath}/infrastructure/adapter/${className}RepositoryAdapter.java`),
     javaFile(`${basePath}/infrastructure/mapper/${className}Mapper.java`),
-    javaFile(`${basePath}/infrastructure/persistence/${className}EntityRepository.java`),
     ...(await migrationFiles(resource, outputDir, plannedFiles))
   ];
 
+  if (resource.mode !== 'read') {
+    files.push(
+      javaFile(`${basePath}/application/dto/${className}CreateRequest.java`),
+      javaFile(`${basePath}/application/dto/${className}UpdateRequest.java`)
+    );
+  }
+
+  if (resource.mode !== 'embed') {
+    files.push(
+      javaFile(`${basePath}/presentation/controller/${className}Controller.java`),
+      javaFile(`${basePath}/application/service/${className}ServiceImpl.java`),
+      ...serviceHookFiles(resource),
+      javaFile(`${basePath}/domain/port/inbound/${className}Service.java`),
+      javaFile(`${basePath}/domain/port/outbound/${className}RepositoryPort.java`),
+      javaFile(`${basePath}/infrastructure/adapter/${className}RepositoryAdapter.java`),
+      javaFile(`${basePath}/infrastructure/persistence/${className}EntityRepository.java`)
+    );
+  }
+
   return files;
+}
+
+function serviceHookFiles(resource) {
+  if (resource.mode !== 'crud') return [];
+  if (!resource.fields.some((field) => field.relation?.type === 'many-to-one')) return [];
+  return [javaFile(`src/main/java/${packageToPath(resource.packageName)}/application/hook/${resource.name}ServiceHook.java`)];
+}
+
+function generatedEnumFiles(resource) {
+  const basePath = `src/main/java/${packageToPath(resource.packageName)}/domain/model`;
+  const enums = new Map();
+
+  for (const field of resource.fields) {
+    if (field.enum?.generated) enums.set(field.enum.name, field.enum);
+  }
+
+  return [...enums.values()].map((enumDefinition) => javaFile(`${basePath}/${enumDefinition.name}.java`));
 }
 
 function webFiles(resource) {
