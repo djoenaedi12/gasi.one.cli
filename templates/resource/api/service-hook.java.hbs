@@ -14,16 +14,17 @@ public class {{resource.name}}ServiceHook implements ResourceServiceHook<{{servi
 
     @Override
     public void beforeCreate(String resourceType, {{resource.name}} domain, {{resource.name}}CreateRequest request) {
-        validateRelations(domain);
+        validateRelations(domain{{serviceRelationHook.createValidateArgs}});
     }
 
     @Override
     public void beforeUpdate(String resourceType, {{resource.name}} domain, {{resource.name}}UpdateRequest request) {
-        validateRelations(domain);
+        validateRelations(domain{{serviceRelationHook.updateValidateArgs}});
     }
 {{serviceRelationHook.ownershipMethods}}
 
-    private void validateRelations({{resource.name}} domain) {
+    private void validateRelations({{resource.name}} domain{{serviceRelationHook.validateParams}}) {
 {{serviceRelationHook.validateBlocks}}
     }
+{{serviceRelationHook.helperMethods}}
 }

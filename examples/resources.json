@@ -98,6 +98,7 @@
             "type": "many-to-one",
             "target": "Department",
             "package": "gasi.one.plugins.hr.department",
+            "labelField": "name",
             "joinColumn": "department_id",
             "fetch": "lazy"
           }
@@ -108,7 +109,7 @@
       "name": "EmployeeAsset",
       "mode": "embed",
       "pluginName": "hr",
-      "package": "gasi.one.plugins.hr.employee.asset",
+      "package": "gasi.one.plugins.hr.employeeasset",
       "parent": {
         "resource": "Employee",
         "field": "assets"
@@ -142,7 +143,7 @@
     {
       "name": "EmployeeCertification",
       "pluginName": "hr",
-      "package": "gasi.one.plugins.hr.employee.certification",
+      "package": "gasi.one.plugins.hr.employeecertification",
       "endpoint": "/certifications",
       "parent": {
         "resource": "Employee",

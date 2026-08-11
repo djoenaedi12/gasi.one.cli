@@ -152,10 +152,38 @@ Set `type` to `string` when the enum should use `EnumType.STRING` and a `VARCHAR
 | `type` | Yes | Currently only `many-to-one` is supported. |
 | `target` | Yes | Target resource/entity name. |
 | `package` | Yes | Target resource Java package. |
+| `labelField` | No | Target model field used to generate a read-only `{relationName}Label` response field. No label field is generated when omitted. Alias: `displayField`. |
 | `joinColumn` | No | Foreign key column. Defaults to the field column name. |
 | `fetch` | No | JPA fetch mode. Defaults to `lazy`. |
 | `cascade` | No | Cascade values array. Preserved in normalized context. |
 | `orphanRemoval` | No | Boolean flag. Defaults to `false`. |
+
+Many-to-one request and response IDs are public encoded strings. For a relation field named `department`,
+generated mutation DTOs use `String departmentId`, and response DTOs use `String departmentId`.
+
+When `labelField` is configured, response DTOs also include a read-only label field:
+
+```json
+{
+  "name": "department",
+  "type": "long",
+  "relation": {
+    "type": "many-to-one",
+    "target": "Department",
+    "package": "gasi.one.plugins.hr.department",
+    "labelField": "name"
+  }
+}
+```
+
+This generates response fields like:
+
+```java
+private String departmentId;
+private String departmentLabel;
+```
+
+The generated DTO mapper encodes `department.id` into `departmentId` and maps `department.name` into `departmentLabel`.
 
 ### Parent Properties
 

@@ -16,7 +16,7 @@ export function {{resource.name}}Form({ initialValue = {}, onSubmit }: Props) {
 
   return (
     <form onSubmit={handleSubmit}>
-{{#each fields}}
+{{#each requestFields}}
       <label>
         {{label}}
         <input

@@ -21,10 +21,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const {{resource.variableName}}Api = {
   findAll: () => request<{{resource.name}}[]>(basePath),
-  findById: (id: number) => request<{{resource.name}}>(`${basePath}/${id}`),
+  findById: (id: string) => request<{{resource.name}}>(`${basePath}/${id}`),
   create: (payload: {{resource.name}}Request) =>
     request<{{resource.name}}>(basePath, { method: 'POST', body: JSON.stringify(payload) }),
-  update: (id: number, payload: {{resource.name}}Request) =>
+  update: (id: string, payload: {{resource.name}}Request) =>
     request<{{resource.name}}>(`${basePath}/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-  delete: (id: number) => request<void>(`${basePath}/${id}`, { method: 'DELETE' })
+  delete: (id: string) => request<void>(`${basePath}/${id}`, { method: 'DELETE' })
 };

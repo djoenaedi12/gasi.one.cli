@@ -1,12 +1,12 @@
 export type {{resource.name}} = {
-  id: number;
-{{#each fields}}
+  id: string;
+{{#each responseFields}}
   {{typeName}}: {{tsType}};
 {{/each}}
 };
 
 export type {{resource.name}}Request = {
-{{#each fields}}
+{{#each requestFields}}
   {{requestName}}: {{tsType}};
 {{/each}}
 };

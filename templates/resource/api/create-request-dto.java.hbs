@@ -2,15 +2,15 @@ package {{packages.dto}};
 
 {{createRequestDtoImportBlock}}
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class {{resource.name}}CreateRequest {
+public class {{resource.name}}CreateRequest extends BaseRequest {
 {{#each createFields}}
 {{requestAnnotationBlock}}
     private {{requestJavaType}} {{requestName}};

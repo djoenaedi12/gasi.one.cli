@@ -9,7 +9,7 @@ export function {{resource.name}}Detail({ value }: Props) {
     <section>
       <h1>{{resource.title}}</h1>
       <dl>
-{{#each fields}}
+{{#each displayFields}}
         <dt>{{label}}</dt>
         <dd>{String(value.{{typeName}} ?? '')}</dd>
 {{/each}}

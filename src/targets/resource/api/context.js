@@ -1,4 +1,5 @@
 import { buildCreateMigrationContext } from './migration.js';
+import { camelCase } from '../../../core/naming.js';
 
 export function buildResourceApiContext(resource, options = {}) {
   const packages = {
@@ -28,8 +29,8 @@ export function buildResourceApiContext(resource, options = {}) {
       requestAccessor: accessorName(field.requestName),
       responseAccessor: accessorName(field.responseName),
       entityJavaType: field.relation ? field.relation.target : field.javaType,
-      requestJavaType: field.relation ? 'Long' : field.javaType,
-      responseJavaType: field.relation ? 'Long' : field.javaType
+      requestJavaType: field.relation ? 'String' : field.javaType,
+      responseJavaType: field.relation ? 'String' : field.javaType
     };
     return {
       ...nextField,
@@ -39,9 +40,9 @@ export function buildResourceApiContext(resource, options = {}) {
   });
   const createFields = fields.filter((field) => (field.dto.create || field.nestedParentRelation) && !field.embeddedParentRelation);
   const updateFields = fields.filter((field) => (field.dto.update || field.nestedParentRelation) && !field.embeddedParentRelation);
-  const summaryFields = fields.filter((field) => field.dto.summary && !field.embeddedParentRelation);
-  const detailFields = fields.filter((field) => field.dto.detail && !field.embeddedParentRelation);
-  const projectionFields = fields.filter((field) => field.projection);
+  const summaryFields = withRelationLabelFields(fields.filter((field) => field.dto.summary && !field.embeddedParentRelation));
+  const detailFields = withRelationLabelFields(fields.filter((field) => field.dto.detail && !field.embeddedParentRelation));
+  const projectionFields = withRelationLabelFields(fields.filter((field) => field.projection));
   const nestedParent = nestedParentContext(resource, fields);
   const embedChildren = buildEmbedChildren(options.embedChildren ?? []);
   const serviceRelationHook = serviceRelationHookContext(resource, fields, nestedParent);
@@ -108,16 +109,16 @@ export function buildResourceApiContext(resource, options = {}) {
     controllerHookMutationMethods: controllerHookMutationMethods(resource, nestedParent),
     dtoMapperExtraImportBlock: dtoMapperExtraImportBlock(embedChildren),
     dtoMapperMappingTargetImport: dtoMapperMappingTargetImport(resource),
-    dtoMapperAutowiredImport: '',
+    dtoMapperAutowiredImport: 'import org.springframework.beans.factory.annotation.Autowired;',
     dtoMapperBaseImport: dtoMapperBaseImport(resource),
     dtoMapperRequestImportBlock: dtoMapperRequestImportBlock(resource),
     dtoMapperBaseInterface: dtoMapperBaseInterface(resource),
-    dtoMapperIdCodecField: '',
-    dtoMapperWriteMethods: dtoMapperWriteMethods(resource),
-    dtoMapperSummaryMappings: '',
-    dtoMapperDetailMappings: '',
+    dtoMapperIdCodecField: dtoMapperIdCodecField(),
+    dtoMapperWriteMethods: dtoMapperWriteMethods(resource, fields),
+    dtoMapperSummaryMappings: dtoMapperResponseMappings(summaryFields),
+    dtoMapperDetailMappings: dtoMapperResponseMappings(detailFields),
     dtoMapperUses: dtoMapperUses(embedChildren),
-    dtoMapperChildImportBlock: '',
+    dtoMapperChildImportBlock: dtoMapperChildImportBlock(embedChildren),
     dtoMapperChildMethods: dtoMapperChildMethods(resource, embedChildren),
     entityMapperExtraImportBlock: entityMapperExtraImportBlock(embedChildren),
     entityMapperUses: entityMapperUses(embedChildren),
@@ -174,7 +175,7 @@ function serviceImportBlock(resource) {
     'gasi.one.core.api.common.id.IdCodec',
     'gasi.one.core.starter.application.hook.ResourceMapperHookRegistry',
     'gasi.one.core.starter.application.hook.ResourceServiceHookRegistry',
-    'gasi.one.core.starter.infrastructure.i18n.MessageUtil'
+    'gasi.one.core.starter.infrastructure.i18n.MessageResolver'
   ]);
 
   return importBlock([...imports].sort());
@@ -216,7 +217,7 @@ function serviceConstructorParams(resource) {
   const params = [
     `${resource.name}RepositoryPort repositoryPort`,
     `${resource.name}DtoMapper dtoMapper`,
-    'MessageUtil messageUtil',
+    'MessageResolver messageResolver',
     'IdCodec idCodec',
     'ResourceServiceHookRegistry hookRegistry',
     'ResourceMapperHookRegistry mapperHookRegistry'
@@ -229,7 +230,7 @@ function serviceSuperArgs(resource) {
   const args = [
     'repositoryPort',
     'dtoMapper',
-    'messageUtil',
+    'messageResolver',
     'idCodec',
     'hookRegistry',
     'mapperHookRegistry'
@@ -312,8 +313,8 @@ function controllerHookMutationMethods(resource, nestedParent) {
         if (request == null) {
             return;
         }
-        Long parentId = decodeParentId(context);
-        if (parentId != null) {
+        String parentId = context.pathVariable("${nestedParent.pathParam}");
+        if (parentId != null && !parentId.isBlank()) {
             request.set${nestedParent.requestAccessor}(parentId);
         }
     }
@@ -324,8 +325,8 @@ function controllerHookMutationMethods(resource, nestedParent) {
         if (request == null) {
             return;
         }
-        Long parentId = decodeParentId(context);
-        if (parentId != null) {
+        String parentId = context.pathVariable("${nestedParent.pathParam}");
+        if (parentId != null && !parentId.isBlank()) {
             request.set${nestedParent.requestAccessor}(parentId);
         }
     }`;
@@ -411,16 +412,19 @@ function dtoMapperBaseInterface(resource) {
   return `BaseDtoMapper<${resource.name}, ${resource.name}CreateRequest, ${resource.name}UpdateRequest, ${resource.name}SummaryResponse, ${resource.name}DetailResponse>`;
 }
 
-function dtoMapperWriteMethods(resource) {
+function dtoMapperWriteMethods(resource, fields) {
   if (resource.mode === 'read') return '';
 
-  return `    @Override
+  const mappings = dtoMapperWriteRelationMappings(fields);
+  const mappingBlock = mappings ? `${mappings}\n` : '';
+
+  return `${mappingBlock}    @Override
     public abstract ${resource.name} toCreateDomain(${resource.name}CreateRequest request);
 
-    @Override
+${mappingBlock}    @Override
     public abstract ${resource.name} toUpdateDomain(${resource.name}UpdateRequest request);
 
-    @Override
+${mappingBlock}    @Override
     public abstract void updateDomain(${resource.name}UpdateRequest request, @MappingTarget ${resource.name} domain);
 
     @Override
@@ -428,6 +432,42 @@ function dtoMapperWriteMethods(resource) {
 
     @Override
     public abstract void copyDomain(${resource.name} source, @MappingTarget ${resource.name} target);`;
+}
+
+function dtoMapperWriteRelationMappings(fields) {
+  return fields
+    .filter((field) => field.relation?.type === 'many-to-one' && !field.embeddedParentRelation)
+    .map((field) => `    @Mapping(target = "${field.propertyName}.id", source = "${field.requestName}", qualifiedByName = "decodeId")`)
+    .join('\n');
+}
+
+function dtoMapperResponseMappings(fields) {
+  const mappings = [
+    '    @Mapping(target = "id", source = "id", qualifiedByName = "encodeId")',
+    ...fields
+      .filter((field) => field.relation?.type === 'many-to-one')
+      .map((field) => `    @Mapping(target = "${field.responseName}", source = "${field.propertyName}.id", qualifiedByName = "encodeId")`),
+    ...fields
+      .filter((field) => field.relationLabel)
+      .map((field) => `    @Mapping(target = "${field.responseName}", source = "${field.relationLabelSource}")`)
+  ];
+  return mappings.join('\n');
+}
+
+function dtoMapperIdCodecField() {
+  return `    @Autowired
+    private IdCodec idCodec;
+
+    @org.mapstruct.Named("encodeId")
+    protected String encodeId(Long id) {
+        return idCodec.encode(id);
+    }
+
+    @org.mapstruct.Named("decodeId")
+    protected Long decodeId(String id) {
+        return idCodec.decode(id);
+    }
+`;
 }
 
 function buildFieldAnnotations(field) {
@@ -455,7 +495,7 @@ function buildFieldAnnotations(field) {
 function buildRequestAnnotations(field) {
   const annotations = [];
   const validation = field.validation;
-  const stringLike = ['string', 'text'].includes(field.type);
+  const stringLike = field.relation || ['string', 'text'].includes(field.type);
   const required = field.required && !field.nestedParentRelation;
 
   if (required && stringLike) annotations.push('@NotBlank');
@@ -478,6 +518,38 @@ function buildRequestAnnotations(field) {
   if (validation.futureOrPresent) annotations.push('@FutureOrPresent');
 
   return annotations;
+}
+
+function withRelationLabelFields(fields) {
+  return fields.flatMap((field) => {
+    if (field.relation?.type !== 'many-to-one' || !field.relation.labelField) return [field];
+    return [field, relationLabelField(field)];
+  });
+}
+
+function relationLabelField(field) {
+  return {
+    ...field,
+    name: `${field.name}Label`,
+    propertyName: `${field.propertyName}Label`,
+    requestName: `${field.requestName}Label`,
+    responseName: `${field.propertyName}Label`,
+    label: `${field.label} Label`,
+    relation: null,
+    relationLabel: true,
+    relationLabelSource: `${field.propertyName}.${field.relation.labelField}`,
+    javaType: 'String',
+    requestJavaType: 'String',
+    responseJavaType: 'String',
+    entityJavaType: 'String',
+    dto: {
+      create: false,
+      update: false,
+      summary: field.dto.summary,
+      detail: field.dto.detail
+    },
+    projection: field.projection
+  };
 }
 
 function isNestedParentRelation(resource, field) {
@@ -520,6 +592,7 @@ function serviceRelationHookContext(resource, fields, nestedParent) {
     'gasi.one.core.api.resource.hook.HookLayer',
     'gasi.one.core.api.resource.hook.ResourceHook',
     'gasi.one.core.api.resource.hook.ResourceServiceHook',
+    'gasi.one.core.starter.infrastructure.i18n.MessageResolver',
     `${resource.packageName}.application.dto.${resource.name}CreateRequest`,
     `${resource.packageName}.application.dto.${resource.name}DetailResponse`,
     `${resource.packageName}.application.dto.${resource.name}SummaryResponse`,
@@ -537,6 +610,9 @@ function serviceRelationHookContext(resource, fields, nestedParent) {
     const target = field.relation.target;
     const variableName = field.propertyName;
     const accessor = field.javaAccessor;
+    const requestAccessor = field.requestAccessor;
+    const requestField = field.requestName;
+    const labelKey = `${moduleName(resource)}.${camelCase(target)}.label`;
     const repositoryField = `${variableName}RepositoryPort`;
     imports.add(`${field.relation.packageName}.domain.model.${target}`);
     imports.add(`${field.relation.packageName}.domain.port.outbound.${target}RepositoryPort`);
@@ -550,13 +626,22 @@ function serviceRelationHookContext(resource, fields, nestedParent) {
       fieldDeclaration: `    private final ${target}RepositoryPort ${repositoryField};`,
       validateBlock: `        if (domain.get${accessor}() != null && domain.get${accessor}().getId() != null) {
             ${target} ${variableName} = ${repositoryField}.findById(domain.get${accessor}().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("${target} not found: " + domain.get${accessor}().getId()));
+                    .orElseThrow(() -> new EntityNotFoundException(notFoundMessage(
+                            "${labelKey}",
+                            ${requestField})));
             domain.set${accessor}(${variableName});
-        }`
+        }`,
+      createValidateArg: `request.get${requestAccessor}()`,
+      updateValidateArg: `request.get${requestAccessor}()`,
+      validateParam: `String ${requestField}`
     };
   });
 
-  const constructorEntries = [...entries];
+  const constructorEntries = [...entries, {
+    fieldDeclaration: '    private final MessageResolver messageResolver;',
+    constructorParam: 'MessageResolver messageResolver',
+    assignment: '        this.messageResolver = messageResolver;'
+  }];
   if (nestedParent) {
     constructorEntries.unshift({
       fieldDeclaration: '    private final IdCodec idCodec;',
@@ -572,12 +657,24 @@ function serviceRelationHookContext(resource, fields, nestedParent) {
   return {
     importBlock: importBlock([...imports].sort()),
     genericTypes: `${resource.name}, ${resource.name}CreateRequest, ${resource.name}UpdateRequest, ${resource.name}SummaryResponse, ${resource.name}DetailResponse`,
+    createValidateArgs: entries.length ? `, ${entries.map((entry) => entry.createValidateArg).join(', ')}` : '',
+    updateValidateArgs: entries.length ? `, ${entries.map((entry) => entry.updateValidateArg).join(', ')}` : '',
+    validateParams: entries.length ? `,\n            ${entries.map((entry) => entry.validateParam).join(',\n            ')}` : '',
     fieldDeclarations: constructorEntries.map((entry) => entry.fieldDeclaration).join('\n'),
     constructorParams: constructorEntries.map((entry) => entry.constructorParam).join(',\n            '),
     constructorAssignments: constructorEntries.map((entry) => entry.assignment).join('\n'),
     validateBlocks: entries.map((entry) => entry.validateBlock).join('\n'),
-    ownershipMethods: nestedParentOwnershipMethods(resource, nestedParent)
+    ownershipMethods: nestedParentOwnershipMethods(resource, nestedParent),
+    helperMethods: serviceRelationHelperMethods()
   };
+}
+
+function serviceRelationHelperMethods() {
+  return `
+
+    private String notFoundMessage(String labelKey, String id) {
+        return messageResolver.get("error.reference.notFound", messageResolver.get(labelKey), id);
+    }`;
 }
 
 function nestedParentOwnershipMethods(resource, nestedParent) {
@@ -608,11 +705,19 @@ function nestedParentOwnershipMethods(resource, nestedParent) {
         }
 
         ${resource.name} domain = repositoryPort.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("${resource.name} not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(notFoundMessage(
+                        "${moduleName(resource)}.${resource.variableName}.label",
+                        encodedId(id))));
         if (domain.get${nestedParent.fieldAccessor}() == null
                 || !parentId.equals(domain.get${nestedParent.fieldAccessor}().getId())) {
-            throw new EntityNotFoundException("${resource.name} not found: " + id);
+            throw new EntityNotFoundException(notFoundMessage("${moduleName(resource)}.${resource.variableName}.label", encodedId(id)));
         }
+    }
+
+    private String encodedId(Long id) {
+        ResourceRequestContext context = ResourceRequestContextHolder.get();
+        String encodedId = context.pathVariable("id");
+        return encodedId == null || encodedId.isBlank() ? String.valueOf(id) : encodedId;
     }`;
 }
 
@@ -718,7 +823,8 @@ function buildModelImports(fields, targetPackage, embedChildren = []) {
 }
 
 function buildRequestDtoImports(fields, targetPackage, embedChildren = [], kind = 'create') {
-  const imports = new Set();
+  const imports = new Set(['gasi.one.core.api.resource.dto.BaseRequest']);
+  if (kind === 'update') imports.add('gasi.one.core.api.resource.dto.VersionedRequest');
 
   for (const field of fields) {
     if (field.requestJavaType === 'BigDecimal') imports.add('java.math.BigDecimal');
@@ -760,12 +866,17 @@ function buildResponseDtoImports(fields, targetPackage, embedChildren = []) {
 }
 
 function dtoMapperExtraImportBlock(embedChildren) {
-  const imports = [];
+  const imports = ['org.mapstruct.Mapping'];
   if (embedChildren.length > 0) imports.push('org.mapstruct.AfterMapping');
+  return importBlock(imports);
+}
+
+function dtoMapperChildImportBlock(embedChildren) {
+  const imports = [];
   for (const child of embedChildren) {
     imports.push(`${child.packages.dtoMapper}.${child.name}DtoMapper`);
   }
-  return importBlock(imports.sort());
+  return importBlock(imports);
 }
 
 function dtoMapperUses(embedChildren) {

@@ -142,6 +142,7 @@ function normalizeRelation(rawRelation) {
     type: String(rawRelation.type).toLowerCase(),
     target: rawRelation.target ?? '',
     packageName: rawRelation.package ?? '',
+    labelField: rawRelation.labelField ?? rawRelation.displayField ?? '',
     table: rawRelation.table ?? '',
     joinColumn: rawRelation.joinColumn ?? '',
     mappedBy: rawRelation.mappedBy ?? '',
