@@ -6,6 +6,7 @@ export function createPluginApiFiles(plugin) {
   const javaPath = `${basePath}/src/main/java/${plugin.packagePath}`;
   const extensionPath = `${javaPath}/extension`;
   return [
+    file(`${basePath}/src/main/resources/META-INF/NOTICE`, 'legal/NOTICE.hbs', {}),
     file(`${basePath}/pom.xml`, 'plugin/api/pom.xml.hbs', context),
     file(`${javaPath}/${plugin.className}Plugin.java`, 'plugin/api/plugin.java.hbs', context),
     file(`${extensionPath}/${plugin.extensionClassName}.java`, 'plugin/api/app-extension.java.hbs', context),

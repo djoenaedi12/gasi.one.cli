@@ -50,7 +50,7 @@ export async function buildResourcePlan(document, options) {
 
   const files = [];
   for (const file of plannedFiles) {
-    const content = await renderTemplate(file.template, file.context);
+    const content = await renderTemplate(file.template, file.context, { outputPath: file.path });
     const absolutePath = path.join(outputDir, file.path);
     const exists = await pathExists(absolutePath);
     files.push({
