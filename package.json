@@ -8,8 +8,12 @@
   },
   "scripts": {
     "validate:example": "node ./bin/gasi-one.js resource validate -f examples/resources.json",
-    "plan:example": "node ./bin/gasi-one.js resource plan -f examples/resources.json -o generated",
-    "smoke": "node ./bin/gasi-one.js resource sync -f examples/resources.json -o generated"
+    "plan:example": "node ./bin/gasi-one.js resource plan -f examples/resources.json -o generated --target api",
+    "plan:example:api": "node ./bin/gasi-one.js resource plan -f examples/resources.json -o generated --target api",
+    "plan:example:web": "node ./bin/gasi-one.js resource plan -f examples/resources.json -o generated --target web",
+    "smoke": "node ./bin/gasi-one.js resource sync -f examples/resources.json -o generated --target api",
+    "smoke:api": "node ./bin/gasi-one.js resource sync -f examples/resources.json -o generated --target api",
+    "smoke:web": "node ./bin/gasi-one.js resource sync -f examples/resources.json -o generated --target web"
   },
   "engines": {
     "node": ">=18"

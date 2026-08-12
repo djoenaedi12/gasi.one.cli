@@ -49,9 +49,10 @@ export async function runResourceCommand(command, args) {
 
   if (command === 'clean') {
     const result = await cleanResources(document, {
+      target: options.target,
       outputDir: options.output ?? 'generated'
     });
-    console.log(`Cleaned ${result.removedResources} resource(s), deleted ${result.deletedFiles} generated file(s), deleted ${result.deletedMigrationFiles} migration file(s), updated ${result.updatedI18nFiles} i18n file(s), deleted ${result.deletedI18nFiles} empty i18n file(s), skipped ${result.skippedResources} missing resource(s)`);
+    console.log(`Cleaned ${result.cleanedResources} resource(s), deleted ${result.deletedFiles} generated file(s), deleted ${result.deletedMigrationFiles} migration file(s), updated ${result.updatedI18nFiles} i18n file(s), deleted ${result.deletedI18nFiles} empty i18n file(s), removed ${result.removedResources} manifest resource(s), skipped ${result.skippedResources} missing resource(s)`);
     return;
   }
 

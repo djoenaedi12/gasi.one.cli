@@ -5,8 +5,10 @@ import { resourceKey } from '../../targets/resource/api/migration.js';
 
 export async function cleanResources(document, options) {
   const outputDir = path.resolve(options.outputDir);
+  const target = options.target;
   const manifest = await readManifest(outputDir);
   const result = {
+    cleanedResources: 0,
     deletedFiles: 0,
     deletedMigrationFiles: 0,
     updatedI18nFiles: 0,
@@ -23,8 +25,16 @@ export async function cleanResources(document, options) {
       continue;
     }
 
-    for (const file of entry.files ?? []) {
-      if (!shouldDeleteFile(file)) continue;
+    const files = entry.files ?? [];
+    const filesToDelete = files.filter((file) => file.target === target && shouldDeleteFile(file));
+    const i18nToClean = target === 'api' ? entry.i18n ?? [] : [];
+
+    if (filesToDelete.length === 0 && i18nToClean.length === 0) {
+      result.skippedResources += 1;
+      continue;
+    }
+
+    for (const file of filesToDelete) {
       if (await removeFile(path.join(outputDir, file.path))) {
         if (file.kind === 'migration') {
           result.deletedMigrationFiles += 1;
@@ -35,14 +45,26 @@ export async function cleanResources(document, options) {
       }
     }
 
-    for (const i18nEntry of entry.i18n ?? []) {
+    for (const i18nEntry of i18nToClean) {
       const action = await removeI18nKeys(outputDir, i18nEntry);
       if (action === 'updated') result.updatedI18nFiles += 1;
       if (action === 'deleted') result.deletedI18nFiles += 1;
     }
 
-    delete manifest.resources[key];
-    result.removedResources += 1;
+    const remainingFiles = files.filter((file) => !(file.target === target && shouldDeleteFile(file)));
+    const remainingI18n = target === 'api' ? [] : entry.i18n ?? [];
+
+    if (remainingFiles.length === 0 && remainingI18n.length === 0) {
+      delete manifest.resources[key];
+      result.removedResources += 1;
+    } else {
+      manifest.resources[key] = {
+        ...entry,
+        files: remainingFiles,
+        i18n: remainingI18n
+      };
+    }
+    result.cleanedResources += 1;
   }
 
   await writeManifest(outputDir, manifest);

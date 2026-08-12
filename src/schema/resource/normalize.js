@@ -153,27 +153,37 @@ function normalizeRelation(rawRelation) {
 }
 
 function resolveRelationTables(resources) {
-  const resourcesByName = new Map(resources.map((resource) => [resource.name, resource]));
+  const resourcesByName = groupResourcesByName(resources);
   const resourcesByPackageAndName = new Map(resources.map((resource) => [`${resource.packageName}.${resource.name}`, resource]));
 
   for (const resource of resources) {
     for (const field of resource.fields) {
       if (!field.relation || field.relation.table) continue;
-      const targetResource = resourcesByPackageAndName.get(`${field.relation.packageName}.${field.relation.target}`)
-        ?? resourcesByName.get(field.relation.target);
+      const targetResource = resolveResourceReference({
+        resourceName: field.relation.target,
+        packageName: field.relation.packageName,
+        resourcesByPackageAndName,
+        resourcesByName,
+        ambiguityMessage: () => `Relation ${resource.name}.${field.name} package is required because target ${field.relation.target} is ambiguous.`
+      });
       field.relation.table = targetResource?.tableName ?? pluralSnakeCase(field.relation.target);
     }
   }
 }
 
 function resolveParents(resources) {
-  const resourcesByName = new Map(resources.map((resource) => [resource.name, resource]));
+  const resourcesByName = groupResourcesByName(resources);
   const resourcesByPackageAndName = new Map(resources.map((resource) => [`${resource.packageName}.${resource.name}`, resource]));
 
   for (const resource of resources) {
     if (!resource.parent) continue;
-    const parentResource = resourcesByPackageAndName.get(`${resource.parent.packageName}.${resource.parent.resource}`)
-      ?? resourcesByName.get(resource.parent.resource);
+    const parentResource = resolveResourceReference({
+      resourceName: resource.parent.resource,
+      packageName: resource.parent.packageName,
+      resourcesByPackageAndName,
+      resourcesByName,
+      ambiguityMessage: () => `Resource ${resource.name} parent.package is required because parent ${resource.parent.resource} is ambiguous.`
+    });
 
     if (parentResource) {
       resource.parent.packageName ||= parentResource.packageName;
@@ -184,4 +194,29 @@ function resolveParents(resources) {
     resource.parent.endpoint ||= `/${pluralKebabCase(resource.parent.resource)}`;
     resource.parent.table ||= pluralSnakeCase(resource.parent.resource);
   }
+}
+
+function groupResourcesByName(resources) {
+  const grouped = new Map();
+  for (const resource of resources) {
+    if (!grouped.has(resource.name)) grouped.set(resource.name, []);
+    grouped.get(resource.name).push(resource);
+  }
+  return grouped;
+}
+
+function resolveResourceReference({
+  resourceName,
+  packageName,
+  resourcesByPackageAndName,
+  resourcesByName,
+  ambiguityMessage
+}) {
+  if (packageName) {
+    return resourcesByPackageAndName.get(`${packageName}.${resourceName}`) ?? null;
+  }
+
+  const candidates = resourcesByName.get(resourceName) ?? [];
+  if (candidates.length > 1) throw new Error(ambiguityMessage());
+  return candidates[0] ?? null;
 }

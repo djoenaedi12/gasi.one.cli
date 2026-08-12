@@ -1,7 +1,7 @@
 import { fieldTypes } from './types.js';
 
 export function validateResourceDocument(document) {
-  assertUnique(document.resources.map((resource) => resource.name), 'resource name');
+  assertUnique(document.resources.map((resource) => `${resource.packageName}.${resource.name}`), 'resource package/name');
 
   for (const resource of document.resources) {
     if (!resource.name) throw new Error('Resource name is required.');
